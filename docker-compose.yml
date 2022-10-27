@@ -1,9 +1,11 @@
 version: "3.7"
 volumes:
   kong_data: {}
-  
+  redis_data: {}
+
 networks:
- kong-net:
+  kong-net:
+
 services:
 #######################################
   # Postgres: The database used by Kong
@@ -49,6 +51,7 @@ services:
 #######################################
   kong:
     image: ${KONG_DOCKER_TAG:-kong:latest}
+    container_name: kong
     restart: on-failure
     networks:
       - kong-net
@@ -89,9 +92,10 @@ services:
 #######################################
   konga:
     image: pantsel/konga:latest
+    container_name: konga
     restart: always
     networks:
-        - kong-net   
+      - kong-net   
     environment:
       DB_ADAPTER: postgres
       DB_URI: postgresql://kong:${KONG_PG_PASSWORD:-kong}@kong-database:5432/konga
@@ -100,3 +104,28 @@ services:
       - kong-database
     ports:
       - "1337:1337"
+#######################################
+  # redis
+#######################################
+  redis:
+    image: 'bitnami/redis:7.0.5'
+    container_name: redis
+    restart: always
+    networks:
+      - kong-net
+    environment:
+      - REDIS_PORT_NUMBER=7000
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - "7000:7000"
+#######################################
+  # httpbin
+#######################################
+  httpbin:
+    image: kennethreitz/httpbin
+    container_name: httpbin
+    restart: always
+    networks:
+        - kong-net   
+    ports:
+      - "8080:80"
